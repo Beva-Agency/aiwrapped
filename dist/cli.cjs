@@ -365,7 +365,7 @@ var fr = {
   noStats: "Stats globales d\xE9sactiv\xE9es (--no-stats).",
   retention: (d) => `Claude Code n\u2019a gard\xE9 que ${d} jours de logs. Pour une ann\xE9e enti\xE8re : "cleanupPeriodDays": 365 dans ~/.claude/settings.json`,
   period: { year: (y) => `ann\xE9e ${y}`, since: (d) => `depuis le ${d}`, all: "tout l\u2019historique" },
-  help: `Usage : npx aiwrapped [options]
+  help: `Usage : npx wrappedai [options]
 
 Lit en local les logs de Claude Code, Codex et Gemini CLI, calcule ton Wrapped
 et l\u2019ouvre sur wrapped.mazaki.fr. Tes prompts et ton code ne quittent pas ta machine.
@@ -402,7 +402,7 @@ var en = {
   noStats: "Global stats disabled (--no-stats).",
   retention: (d) => `Claude Code only kept ${d} days of logs. For a full year: "cleanupPeriodDays": 365 in ~/.claude/settings.json`,
   period: { year: (y) => `year ${y}`, since: (d) => `since ${d}`, all: "full history" },
-  help: `Usage: npx aiwrapped [options]
+  help: `Usage: npx wrappedai [options]
 
 Reads your Claude Code, Codex and Gemini CLI logs locally, computes your Wrapped
 and opens it on wrapped.mazaki.fr. Your prompts and code never leave your machine.
@@ -881,7 +881,7 @@ function parseArgs(argv) {
     noOpen: false,
     json: false,
     dirs: {},
-    url: process.env.AIWRAPPED_URL || DEFAULT_URL,
+    url: process.env.WRAPPEDAI_URL || DEFAULT_URL,
     help: false,
     version: false
   };
@@ -951,7 +951,7 @@ function pretty(p) {
   return p.startsWith(h) ? `~${p.slice(h.length)}`.replace(/\\/g, "/") : p;
 }
 function installId() {
-  const dir = import_node_path5.default.join(import_node_os.default.homedir(), ".aiwrapped");
+  const dir = import_node_path5.default.join(import_node_os.default.homedir(), ".wrappedai");
   const file = import_node_path5.default.join(dir, "id");
   try {
     const existing = import_node_fs3.default.readFileSync(file, "utf8").trim();
@@ -1139,6 +1139,6 @@ async function main() {
   out();
 }
 main().catch((e) => {
-  err(danger(`aiwrapped: ${e instanceof Error ? e.message : String(e)}`));
+  err(danger(`wrappedai: ${e instanceof Error ? e.message : String(e)}`));
   process.exitCode = 1;
 });

@@ -1,10 +1,10 @@
-# aiwrapped
+# wrappedai
 
 Your year with Claude Code, Codex and Gemini CLI, in one image.
 Ton année avec Claude Code, Codex et Gemini CLI, en une image.
 
 ```bash
-npx aiwrapped
+npx wrappedai
 ```
 
 The CLI reads your logs locally, adds up totals (tokens, sessions, hours, tools, models) and opens your Wrapped on [wrapped.mazaki.fr](https://wrapped.mazaki.fr). Your prompts, your code and the models' answers never leave your machine.
@@ -21,7 +21,7 @@ Le CLI lit tes logs en local, additionne des totaux et ouvre ton Wrapped sur [wr
 
 ## What gets sent
 
-Only aggregated totals, encoded in the URL after the `#` (your browser never sends that part to the server). The page then adds your anonymous totals to the global counter, unless you pass `--no-stats`. Run `npx aiwrapped --json` to see exactly what would be sent.
+Only aggregated totals, encoded in the URL after the `#` (your browser never sends that part to the server). The page then adds your anonymous totals to the global counter, unless you pass `--no-stats`. Run `npx wrappedai --json` to see exactly what would be sent.
 
 ## Options
 

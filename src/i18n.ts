@@ -32,7 +32,7 @@ const fr = {
   retention: (d: number) =>
     `Claude Code n’a gardé que ${d} jours de logs. Pour une année entière : "cleanupPeriodDays": 365 dans ~/.claude/settings.json`,
   period: { year: (y: number) => `année ${y}`, since: (d: string) => `depuis le ${d}`, all: "tout l’historique" },
-  help: `Usage : npx aiwrapped [options]
+  help: `Usage : npx wrappedai [options]
 
 Lit en local les logs de Claude Code, Codex et Gemini CLI, calcule ton Wrapped
 et l’ouvre sur wrapped.mazaki.fr. Tes prompts et ton code ne quittent pas ta machine.
@@ -71,7 +71,7 @@ const en: typeof fr = {
   retention: (d: number) =>
     `Claude Code only kept ${d} days of logs. For a full year: "cleanupPeriodDays": 365 in ~/.claude/settings.json`,
   period: { year: (y: number) => `year ${y}`, since: (d: string) => `since ${d}`, all: "full history" },
-  help: `Usage: npx aiwrapped [options]
+  help: `Usage: npx wrappedai [options]
 
 Reads your Claude Code, Codex and Gemini CLI logs locally, computes your Wrapped
 and opens it on wrapped.mazaki.fr. Your prompts and code never leave your machine.

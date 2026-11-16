@@ -41,7 +41,7 @@ function parseArgs(argv: string[]): Args {
     noOpen: false,
     json: false,
     dirs: {},
-    url: process.env.AIWRAPPED_URL || DEFAULT_URL,
+    url: process.env.WRAPPEDAI_URL || DEFAULT_URL,
     help: false,
     version: false,
   };
@@ -83,7 +83,7 @@ function pretty(p: string): string {
 
 /** Identifiant anonyme et aléatoire de l'installation, pour ne compter chaque personne qu'une fois. */
 function installId(): string {
-  const dir = path.join(os.homedir(), ".aiwrapped");
+  const dir = path.join(os.homedir(), ".wrappedai");
   const file = path.join(dir, "id");
   try {
     const existing = fs.readFileSync(file, "utf8").trim();
@@ -294,6 +294,6 @@ async function main() {
 }
 
 main().catch((e: unknown) => {
-  err(danger(`aiwrapped: ${e instanceof Error ? e.message : String(e)}`));
+  err(danger(`wrappedai: ${e instanceof Error ? e.message : String(e)}`));
   process.exitCode = 1;
 });

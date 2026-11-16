@@ -1,5 +1,5 @@
 {
-  "name": "aiwrapped",
+  "name": "wrappedai",
   "version": "0.1.0",
   "description": "Your year with Claude Code, Codex and Gemini CLI, in one image. Reads your logs locally and opens your Wrapped on wrapped.mazaki.fr.",
   "keywords": [
@@ -21,7 +21,7 @@
   },
   "license": "MIT",
   "bin": {
-    "aiwrapped": "dist/cli.cjs"
+    "wrappedai": "dist/cli.cjs"
   },
   "files": [
     "dist/cli.cjs",
