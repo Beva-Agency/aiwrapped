@@ -1,0 +1,45 @@
+{
+  "name": "aiwrapped",
+  "version": "0.1.0",
+  "description": "Your year with Claude Code, Codex and Gemini CLI, in one image. Reads your logs locally and opens your Wrapped on wrapped.mazaki.fr.",
+  "keywords": [
+    "wrapped",
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "tokens",
+    "usage",
+    "cli"
+  ],
+  "homepage": "https://wrapped.mazaki.fr",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Beva-Agency/aiwrapped.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Beva-Agency/aiwrapped/issues"
+  },
+  "license": "MIT",
+  "bin": {
+    "aiwrapped": "dist/cli.cjs"
+  },
+  "files": [
+    "dist/cli.cjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/cli.cjs --banner:js=\"#!/usr/bin/env node\" --legal-comments=none",
+    "typecheck": "tsc --noEmit",
+    "dev": "npm run build && node dist/cli.cjs",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
+  }
+}
