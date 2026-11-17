@@ -1,12 +1,18 @@
 {
   "name": "wrappedai",
-  "version": "0.1.0",
-  "description": "Your year with Claude Code, Codex and Gemini CLI, in one image. Reads your logs locally and opens your Wrapped on wrapped.mazaki.fr.",
+  "version": "0.2.0",
+  "description": "Your year with Claude Code, Codex, Cursor, Gemini CLI, Antigravity, OpenCode, Copilot CLI and more, in one image. Reads your logs locally and opens your Wrapped on wrapped.mazaki.fr.",
   "keywords": [
     "wrapped",
     "claude-code",
     "codex",
     "gemini-cli",
+    "antigravity",
+    "cursor",
+    "opencode",
+    "copilot-cli",
+    "qwen-code",
+    "cline",
     "tokens",
     "usage",
     "cli"

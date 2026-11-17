@@ -4,17 +4,17 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { deflateRawSync } from "node:zlib";
-import { Aggregator, type Payload, type ToolId } from "./collect";
-import { exists, type FoundFile } from "./files";
+import { Aggregator, TOOL_IDS, type Payload, type ToolId } from "./collect";
+import { exists } from "./files";
 import { detectLang, TEXT } from "./i18n";
-import { ClaudeParser, findClaudeFiles } from "./parsers/claude";
-import { CodexParser, findCodexFiles } from "./parsers/codex";
-import { findGeminiFiles, GeminiParser } from "./parsers/gemini";
+import { CursorParser } from "./parsers/cursor";
+import { options, SOURCES } from "./sources";
+import { sqliteAvailable } from "./sqlite";
 import { bar, bold, clearLine, cursor, danger, dim, err, out, progressLine, TOOL_PAINT, underline, yellow } from "./ui";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const DEFAULT_URL = "https://wrapped.mazaki.fr";
-const ALL_TOOLS: ToolId[] = ["claude", "codex", "gemini"];
+const ALL_TOOLS: ToolId[] = [...TOOL_IDS];
 
 interface Args {
   year?: number;
@@ -58,22 +58,23 @@ function parseArgs(argv: string[]): Args {
       case "--no-open": a.noOpen = true; break;
       case "--json": a.json = true; break;
       case "--lang": a.lang = next(); break;
-      case "--claude-dir": a.dirs.claude = next(); break;
-      case "--codex-dir": a.dirs.codex = next(); break;
-      case "--gemini-dir": a.dirs.gemini = next(); break;
+      case "--cursor-csv": options.cursorCsv = next(); break;
       case "--url": a.url = next(); break;
       case "-h": case "--help": a.help = true; break;
       case "-v": case "--version": a.version = true; break;
-      default:
+      default: {
+        // --claude-dir, --cursor-dir… : un dossier par outil.
+        const dir = /^--([a-z]+)-dir$/.exec(flag);
+        if (dir && (ALL_TOOLS as string[]).includes(dir[1])) {
+          a.dirs[dir[1] as ToolId] = next();
+          break;
+        }
         err(danger(`Option inconnue / unknown option: ${argv[i]}`));
         a.help = true;
+      }
     }
   }
   return a;
-}
-
-function home(p: string): string {
-  return p.startsWith("~") ? path.join(os.homedir(), p.slice(1)) : p;
 }
 
 function pretty(p: string): string {
@@ -184,12 +185,6 @@ async function main() {
   }
 
   const agg = new Aggregator({ start, end });
-  const roots: Record<ToolId, string> = {
-    claude: home(args.dirs.claude ?? process.env.CLAUDE_CONFIG_DIR ?? "~/.claude"),
-    codex: home(args.dirs.codex ?? process.env.CODEX_HOME ?? "~/.codex"),
-    gemini: home(args.dirs.gemini ?? "~/.gemini"),
-  };
-  const subdir: Record<ToolId, string> = { claude: "projects", codex: "sessions", gemini: "tmp" };
 
   if (!args.json) {
     out();
@@ -197,44 +192,44 @@ async function main() {
     out();
   }
 
-  const claude = new ClaudeParser(agg);
-  const codex = new CodexParser(agg);
-  const gemini = new GeminiParser(agg);
-  const finders: Record<ToolId, (root: string, since: number) => Promise<FoundFile[]>> = {
-    claude: findClaudeFiles,
-    codex: findCodexFiles,
-    gemini: findGeminiFiles,
-  };
-  const parsers: Record<ToolId, { parse: (f: FoundFile) => Promise<void> }> = { claude, codex, gemini };
-
-  for (const tool of ALL_TOOLS) {
-    const paint = TOOL_PAINT[tool];
-    const label = `  ${paint(tool.padEnd(6))}  ${dim(pretty(path.join(roots[tool], subdir[tool])).padEnd(22))}`;
-    if (!args.only.includes(tool)) {
+  const nameW = Math.max(...SOURCES.map((s) => s.name.length));
+  const pathW = 26;
+  for (const src of SOURCES) {
+    const root = src.root(args.dirs[src.id]);
+    const probe = src.probe(root);
+    const shown = pretty(probe);
+    const label = `  ${TOOL_PAINT[src.id](src.name.padEnd(nameW))}  ${dim((shown.length > pathW ? `…${shown.slice(-(pathW - 1))}` : shown).padEnd(pathW))}`;
+    if (!args.only.includes(src.id)) {
       if (!args.json) out(`${label} ${dim(t.skipped)}`);
       continue;
     }
-    if (!exists(path.join(roots[tool], subdir[tool]))) {
+    if (!exists(probe)) {
       if (!args.json) out(`${label} ${dim(t.notFound)}`);
       continue;
     }
+    const parser = src.parser(agg);
     // Un fichier modifié avant le début de la période ne peut rien contenir d'utile.
-    const files = await finders[tool](roots[tool], start - 86_400_000);
+    const files = await src.find(root, start - 86_400_000);
     const total = files.reduce((a, f) => a + f.size, 0) || 1;
     let done = 0;
     for (const f of files) {
       if (!args.json) progressLine(`${label} ${t.files(fmtInt(files.length, lang)).padStart(16)}  ${bar(done / total)}`);
       try {
-        await parsers[tool].parse(f);
+        await parser.parse(f);
       } catch {
         /* fichier illisible : ignoré */
       }
       done += f.size;
     }
-    if (tool === "gemini") gemini.flush();
+    parser.flush?.();
     if (!args.json) {
       clearLine();
       out(`${label} ${t.files(fmtInt(files.length, lang)).padStart(16)}  ${bar(1)} ok`);
+      const pad = `  ${" ".repeat(nameW)}  `;
+      if (src.sqlite && files.length > 0 && !sqliteAvailable()) out(`${pad}${dim(t.needsSqlite(process.versions.node))}`);
+      else if (parser instanceof CursorParser && files.length > 0) {
+        out(`${pad}${dim(parser.csvRows > 0 ? t.cursorCsv(fmtInt(parser.csvRows, lang)) : t.cursorNoTokens)}`);
+      }
     }
   }
 
@@ -292,6 +287,12 @@ async function main() {
   out(`  ${dim(args.noStats ? t.noStats : t.stats)}`);
   out();
 }
+
+// `npx wrappedai --json | head` : le lecteur ferme le tuyau, ce n’est pas une erreur.
+process.stdout.on("error", (e: NodeJS.ErrnoException) => {
+  if (e.code === "EPIPE") process.exit(0);
+  throw e;
+});
 
 main().catch((e: unknown) => {
   err(danger(`wrappedai: ${e instanceof Error ? e.message : String(e)}`));

@@ -22,12 +22,20 @@ export const yellow = rgb(242, 233, 78, 221);
 export const claude = rgb(229, 135, 95, 173);
 export const codex = rgb(94, 209, 162, 79);
 export const gemini = rgb(142, 166, 255, 111);
+export const antigravity = rgb(201, 155, 255, 141);
+const cursorTool = rgb(92, 200, 230, 81);
+const opencode = rgb(242, 141, 181, 211);
+const copilot = rgb(240, 112, 112, 203);
+const pi = rgb(179, 217, 100, 149);
+const qwen = rgb(229, 138, 224, 176);
+const cline = rgb(163, 182, 204, 146);
 export const danger = rgb(255, 107, 90, 203);
 export const dim: Paint = (s) => (noColor ? s : `\x1b[2m${s}\x1b[22m`);
 export const bold: Paint = (s) => (noColor ? s : `\x1b[1m${s}\x1b[22m`);
 export const underline: Paint = (s) => (noColor ? s : `\x1b[4m${s}\x1b[24m`);
 
-export const TOOL_PAINT = { claude, codex, gemini } as const;
+/** Couleur de chaque outil, la même que sur le site (src/lib/render/theme.ts). */
+export const TOOL_PAINT = { claude, codex, gemini, antigravity, cursor: cursorTool, opencode, copilot, pi, qwen, cline } as const;
 
 export function cursor(): string {
   return noColor ? "|" : yellow("█");

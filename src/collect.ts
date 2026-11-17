@@ -3,7 +3,8 @@
  * Seuls des totaux sortent d'ici : jamais un prompt, un chemin complet ou une ligne de code.
  */
 
-export type ToolId = "claude" | "codex" | "gemini";
+export const TOOL_IDS = ["claude", "codex", "gemini", "antigravity", "cursor", "opencode", "copilot", "pi", "qwen", "cline"] as const;
+export type ToolId = (typeof TOOL_IDS)[number];
 
 export interface UsageEvent {
   tool: ToolId;
@@ -21,6 +22,9 @@ export interface UsageEvent {
   /** taille du prompt de la requête, cache compris (pour les paliers de prix) */
   promptSize: number;
   fast?: boolean;
+  /** nombre de requêtes que représente l’événement (bilans cumulés de Copilot) ; 1 par défaut */
+  requests?: number;
+  /** vide : usage importé sans session (export CSV de Cursor), ne compte ni session ni temps actif */
   session: string;
   project?: string;
 }
@@ -83,11 +87,9 @@ export class Aggregator {
   private filesRead = new Set<string>();
   private filesEdited = new Set<string>();
   private filesCreated = new Set<string>();
-  private toolStats: Record<ToolId, { files: number; sessions: Set<string>; prompts: number; first: number }> = {
-    claude: { files: 0, sessions: new Set(), prompts: 0, first: Infinity },
-    codex: { files: 0, sessions: new Set(), prompts: 0, first: Infinity },
-    gemini: { files: 0, sessions: new Set(), prompts: 0, first: Infinity },
-  };
+  private toolStats = Object.fromEntries(
+    TOOL_IDS.map((id) => [id, { files: 0, sessions: new Set<string>(), prompts: 0, first: Infinity }]),
+  ) as Record<ToolId, { files: number; sessions: Set<string>; prompts: number; first: number }>;
   private promptCount = 0;
   private promptChars = 0;
   private longestPrompt = 0;
@@ -101,12 +103,23 @@ export class Aggregator {
 
   constructor(private range: Range) {}
 
+  rangeStart(): number {
+    return this.range.start;
+  }
+
   inRange(ts: number): boolean {
     return Number.isFinite(ts) && ts >= this.range.start && ts <= this.range.end;
   }
 
   fileScanned(tool: ToolId) {
     this.toolStats[tool].files += 1;
+  }
+
+  /** Bornes de la période et premier jour de l’outil. */
+  private mark(tool: ToolId, ts: number) {
+    if (ts < this.toolStats[tool].first) this.toolStats[tool].first = ts;
+    if (ts < this.minTs) this.minTs = ts;
+    if (ts > this.maxTs) this.maxTs = ts;
   }
 
   private touch(tool: ToolId, ts: number, session: string) {
@@ -118,10 +131,17 @@ export class Aggregator {
     }
     s.times.push(ts);
     this.toolStats[tool].sessions.add(session);
-    if (ts < this.toolStats[tool].first) this.toolStats[tool].first = ts;
-    if (ts < this.minTs) this.minTs = ts;
-    if (ts > this.maxTs) this.maxTs = ts;
+    this.mark(tool, ts);
     return s;
+  }
+
+  /**
+   * Activité sans tokens ni message (réponse de l’agent, appel d’outil) : prolonge la session pour le temps actif.
+   * Sert aux outils qui ne gardent pas l’usage en local (Cursor) ou dont on ne lit que le transcript.
+   */
+  activity(tool: ToolId, ts: number, session: string) {
+    if (!this.inRange(ts) || !session) return;
+    this.touch(tool, ts, session);
   }
 
   usage(e: UsageEvent) {
@@ -138,7 +158,7 @@ export class Aggregator {
       this.models.set(key, row);
     }
     for (let i = 0; i < 6; i++) row.u[i] += vals[i];
-    row.n += 1;
+    row.n += e.requests && e.requests > 1 ? Math.round(e.requests) : 1;
 
     const day = localDay(e.ts);
     const d = this.daily.get(day) ?? [0, 0];
@@ -149,7 +169,8 @@ export class Aggregator {
       p[0] += total;
       this.projects.set(e.project, p);
     }
-    this.touch(e.tool, e.ts, e.session);
+    if (e.session) this.touch(e.tool, e.ts, e.session);
+    else this.mark(e.tool, e.ts);
   }
 
   prompt(e: PromptEvent) {
